@@ -151,9 +151,15 @@ function densitein_create_site($site, $db_spec, $settings){
   // first we attempt to make the base for the new site
   // then we make the htdocs dir 
   // we then copy the version in mind to the new htdocs base
-  densite_exec("mkdir " .   $settings['www_base_site']);  
-  densite_exec("mkdir " .   $settings['www_base_htdocs']);  
-  densite_exec("sudo cp -Rfp " .  $settings['drupal_source_path'] . "/* " .  $settings['www_base_htdocs']);  
+  if (!file_exists($settings['www_base_site'])){
+    densite_exec("mkdir " .   $settings['www_base_site']);
+  }
+
+  if (!file_exists($settings['www_base_htdocs'])){
+    densite_exec("mkdir " .   $settings['www_base_htdocs']);
+  }
+  densite_exec("sudo cp -Rfp " .  $settings['drupal_source_path'] . "/* " .  $settings['www_base_htdocs']);
+  densite_exec("sudo cp " . $settings['drupal_source_path'] . "/.htaccess " . $settings['www_base_htdocs']);
   
   if (DENSITE_REMOVE_TXT){
     densite_exec("sudo rm -Rf " .  $settings['www_base_htdocs'] . "/*.txt");  

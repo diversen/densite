@@ -1,7 +1,3 @@
-$Id: README.txt,v 1.4 2009/06/25 01:36:30 deniver Exp $
-
-/* vim: set linebreak: */
-
 README.txt
 
 The following scripts are tested and working on Debian (Tested on Ubuntu 8.04 Hardy and Ubuntu 8.1 intreped) where you want to install a drupal system in a hopefully easy manner. The densite scripts also makes it easy for you to create new sub-sites and base-sites. MySQL and Postgresql are supported. The densite scripts creates virtual host configuration and drupal-5.x and drupal-6.x sites (most testing is done with drupal-6.x). The script also secures your site by setting good permissions for your file folder and your settings.php file. The default configuration will also delete all .txt files. Finally crontab will be updated. I am working on making drupal-7.x work as well, but this is still 'work in progress'. 
