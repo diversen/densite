@@ -508,9 +508,11 @@ function densite_create_virtualhost($site, $standalone = FALSE){
   densite_write_settings("/tmp/apache2.conf", $apache_default_string);
   densite_exec ("sudo cp /tmp/apache2.conf " . $settings['apache_sites_avail']);
 
-  // restart apache
+  // reload apache
   densite_exec ("sudo a2ensite $site");
   densite_exec ("sudo /etc/init.d/apache2 reload");
+  densite_update_etc_hosts ($site);
+
 }
 
 // }}}
@@ -1790,3 +1792,13 @@ function densite_test($site){
   drupal_uninstall_schema();
    */
 // }}}
+
+function densite_update_etc_hosts ($hostname){
+    // create new hosts file and reload server
+    $hosts_file_str = file_get_contents("/etc/hosts");
+    $new_hosts_file_str = "127.0.0.1\t$hostname\n" . $hosts_file_str;
+    file_put_contents("/tmp/hosts", $new_hosts_file_str);
+    densite_exec("sudo cp -f /tmp/hosts /etc/hosts");
+    densite_exec("sudo /etc/init.d/apache2 reload");
+    densite_exec("rm /tmp/hosts");
+}

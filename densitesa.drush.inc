@@ -345,6 +345,10 @@ function densitesa_create_virtualhost($site, $settings = ''){
 
   densite_exec ("sudo cp /tmp/apache2.conf " . $settings['apache_sites_avail']);
   densite_exec ("sudo chown " . DENSITE_DEFAULT_USER . ":" . DENSITE_DEFAULT_GROUP . " " . $settings['settings_file']);
+  
+  densite_update_etc_hosts ($site);
+
+
   densite_exec ("sudo a2ensite $site");
   densite_exec ("sudo /etc/init.d/apache2 reload");
   return 0;
