@@ -741,21 +741,41 @@ function densite_enable_db ($site, $install = 0){
 function densite_enable_db_manual(){
     $settings = array();
     densite_print(dt("Manual install of the database. ") . "\n");
-    densite_print(dt("You PHP cli version reports you have support for these drivers: "));
-    if (extension_loaded('mysql')){
-      densite_print(dt('mysql '));
-    } 
-    if (extension_loaded('mysqli')){
-      densite_print(dt('mysqli '));
-    } 
-    if (extension_loaded('pgsql')){
-      densite_print(dt('pgsql '));
-    } 
-    densite_print("\n");
-    $db_spec['driver']    = densite_readLine(dt("Driver:         ")); 
-    $db_spec['host']      = densite_readLine(dt("Hostname:       ")); 
-    $db_spec['username']  = densite_readLine(dt("Username:       ")); 
-    $db_spec['password']  = densite_readLine(dt("Password:       ")); 
+    if (!$db_spec['driver'] = DENSITE_DB_DRIVER) {
+      densite_print(dt("You PHP cli version reports you have support for these drivers: "));
+      if (extension_loaded('mysql')){
+        densite_print(dt('mysql '));
+      } 
+      if (extension_loaded('mysqli')){
+        densite_print(dt('mysqli '));
+      }
+      if (extension_loaded('pgsql')){
+        densite_print(dt('pgsql '));
+      }
+      densite_print("\n");
+      $db_spec['driver']    = densite_readLine(dt("Driver:         "));
+    }
+    else {
+      densite_print("Driver from settings from densite.conf: " . $db_spec['driver'] . "\n");
+    }
+    if (!$db_spec['host'] = DENSITE_DB_HOST) {
+      $db_spec['host']      = densite_readLine(dt("Hostname:       "));
+    }
+    else {
+      densite_print("Host from densite.conf: " . $db_spec['host'] . "\n");
+    }
+    if (!$db_spec['username'] = DENSITE_DB_USERNAME) {
+      $db_spec['username']  = densite_readLine(dt("Username:       "));
+    }
+    else {
+      densite_print("Usernames from densite.conf: " . $db_spec['username'] . "\n");
+    }
+    if (!$db_spec['password'] = DENSITE_DB_PASSWORD) {
+      $db_spec['password']  = densite_readLine(dt("Password:       "));
+    }
+    else {
+      densite_print("Password from densite.conf: " . $db_spec['password'] . "\n");
+    }
     $db_spec['database'] =  densite_readLine(dt("Database name:  ")); 
     return $db_spec;
 }
