@@ -178,7 +178,9 @@ function densitein_create_site($site, $db_spec, $settings){
     densite_exec("sudo rm -rf " .   $settings['files_dir']);  
     densite_exec("mkdir " .   $settings['files_dir']);  
   } else {
-    densite_exec ("mkdir " . $settings['files_dir']);
+    if (!file_exists($settings['files_dir'])){
+      densite_exec ("mkdir " . $settings['files_dir']);
+    }
   }
   
   // search and replace $db_url

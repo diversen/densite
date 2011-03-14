@@ -329,7 +329,9 @@ function densitesa_create_virtualhost($site, $settings = ''){
   }
   
   // attempt to create the log files
-  densite_exec("mkdir " . $settings['www_base_site_logs']);
+  if (!file_exists($settings['www_base_site_logs'])){
+    densite_exec("mkdir " . $settings['www_base_site_logs']);
+  }
   densite_exec("touch " . $settings['www_base_site_access']);
   densite_exec("touch " . $settings['www_base_site_error']);
 
