@@ -1,4 +1,4 @@
-#### Download
+#### Download And Install
 
 I moved these scripts to github some time ago. You can find the
 latest version on
@@ -7,20 +7,16 @@ Best option is to cd into your drush/commands folder, and clone the script:
 
      git clone git://github.com/diversen/densite.git
 
-#### Install
-
-If you clone the scripts into the drush/commands folder
 then they are installed. You can use the master or select latest tag.
 
 #### Introduction
 
 The following scripts are tested and working on Debian systems
-(Tested on Ubuntu 8.04 Hardy and Ubuntu 8.1, Ubuntu 10.01 and 10.04)
-where you are using a Drupal system, or want to install a Drupal system
-in a hopefully easy manner. MySQL and Postgresql is supported.
+MySQL and Postgresql is supported.
 The densite scripts creates virtual host configuration and drupal-5.x and
-drupal-6.x sites (most testing is done with drupal-6.x). It also updates
-your /etc/hosts file with installed site.
+drupal-6.x, drupal-7.x sites (most testing is done with drupal-6.x). It also updates
+your /etc/hosts file with installed site. It can also 'curl' a default user
+so you don't have to use the browser. This only works on drupal-6.x
 
 The script also secures your site by setting good permissions for your
 file folder and your settings.php file. The default configuration will also
@@ -59,8 +55,8 @@ home folder, e.g:
     mkdir /home/user/www && cd /home/user/www
     drush densitein www.example.com
 
-If you dont have any real domains to play around with, just use locale IPs like
-127.0.0.1, 127.0.0.2 or your computers names.
+(You will not be able to visit the real www.example.com after this, because
+/etc/hosts now has this domain.
 
 To create a sub site in a install of drupal. cd to the document root of
 your newly installed site, e.g.:
