@@ -464,12 +464,16 @@ function densitesa_download_drupal_file(&$settings){
   if (!$exists){
     $settings['drupal_major_version'] = $m = substr($version, 0, 1);
     $settings['settings_file_default'] = $settings['settings_file_default'] . "-" . $m .".x";
-    $command = "wget " . DENSITE_DOWNLOAD_URL;
+
+    // resume download use downloaded file
+    $command = "wget -c " . DENSITE_DOWNLOAD_URL;
 
     // we use system here to see the process of wget
     system ($command . $settings['drupal_download_file'] . ".tar.gz" , $res);
     densite_exec ("tar xfz " . $settings['drupal_download_file'] . ".tar.gz");
-    densite_exec ("rm " . $settings['drupal_download_file'] . ".tar.gz");
+
+    // don't remove.
+    //densite_exec ("rm " . $settings['drupal_download_file'] . ".tar.gz");
     return 1;
   } else {
     densite_print(dt("File does not exist on remote server") . "\n");

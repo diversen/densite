@@ -11,6 +11,7 @@
  * 
  */
 // include configuration file
+include_once "densite.conf";
 
 // }}} 
 // {{{ densitein_drush_command()
@@ -45,7 +46,7 @@ function densitein_drush_command() {
     'description' => dt('Will download and install a version of drupal.'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH, // No bootstrap at all.
     'arguments' => array(
-       'site' => dt('The drupal base site to install. Use e.g. www.yoursite.net.'),
+       'site' => dt('The drupal base site to install. Use e.g. www.example.com'),
    ),
     'options' => $options
 
@@ -91,6 +92,7 @@ function densitein_drush_help($section) {
  *
  */
 function densitein_densitein($site = '') {
+  
   $res = densite_init();
   if (!$res){
     return $res;
@@ -108,6 +110,7 @@ function densitein_densitein($site = '') {
   }
   
   $settings = densitesa_get_filenames($site, $_SERVER['PWD']);
+  
   $res = densitesa_download_drupal_file(&$settings);
   if (!$res){
     densite_print(dt("Could not download drupal") . "\n");
@@ -120,20 +123,31 @@ function densitein_densitein($site = '') {
     densite_print(dt("Could not make database. Exit\n"));
     return 1;
   }
-  
-  $res = densitein_create_site($site, $db_spec, $settings);
-  densitesa_create_virtualhost($site, $settings);
-  
-  // densite_load_db
-  // keep trying to load the database until user rejects with a no,
-  // or when user has loaded a database
-  while  ( !$db_res = densite_load_db($site, $db_spec, 1)){ }
 
+  $res = densitein_create_site($site, $db_spec, $settings);
+
+  densitesa_create_virtualhost($site, $settings);
+    
   // check to see if user wants a default cron line
   densite_enable_cron($site);
-  densite_print_status($site, $db_res);
+  // change file settings
+  densite_chmod_settings($settings);
+
+  if ($settings['drupal_major_version'] == '6'){
+    // can not curl drupal 7 (requires javascript)
+    // densite_curl_7 ($site, $db_spec, $settings);
+    $readline_str = dt("Do you want to curl install first user with settings from densite.conf [Y/n]? ");
+    $y_or_n = strtoupper(densite_readline($readline_str));
+    if ($y_or_n == 'Y' || empty($y_or_n)){
+      densite_curl_6 ($site, $db_spec, $settings);
+      densite_print_status($site, 1);
+    }
+  } else {
+    densite_print_status($site, 0);
+  }
   return 0;
 }
+
 
 // }}}
 // {{{ densitein_create_site
@@ -176,12 +190,10 @@ function densitein_create_site($site, $db_spec, $settings){
   if ($settings['drupal_major_version'] == '5'){
     $settings['files_dir'] = $settings['www_base_htdocs'] . "/files";  
     densite_exec("sudo rm -rf " .   $settings['files_dir']);  
-    densite_exec("mkdir " .   $settings['files_dir']);  
-  } else {
-    if (!file_exists($settings['files_dir'])){
-      densite_exec ("mkdir " . $settings['files_dir']);
-    }
-  }
+    densite_exec("mkdir " .   $settings['files_dir']);
+    densite_exec ("sudo chmod 777 " . $settings['files_dir']);
+  } 
+ 
   
   // search and replace $db_url
   // the same procedure will be used when on drupal-5.x or drupal-6.x 
@@ -189,6 +201,12 @@ function densitein_create_site($site, $db_spec, $settings){
   // array for holding the database info 
   
   if ($settings['drupal_major_version'] == '7'){
+
+    $settings['files_dir'] = $settings['www_base_htdocs'] . "/sites/default/files";
+    densite_exec("sudo rm -rf " .   $settings['files_dir']);
+    densite_exec("mkdir " .   $settings['files_dir']);
+    densite_exec ("sudo chmod 777 " . $settings['files_dir']);
+
     $settings_str = densite_get_file($settings['settings_file_default']);
     $search = "\$databases = array();";
     $replace = "\$databases['default']['default'] = array(
@@ -200,12 +218,18 @@ function densitein_create_site($site, $db_spec, $settings){
     );";
 
     $settings_str = str_replace($search, $replace, $settings_str);
+    // version 6.x
   } else {
+    $settings['files_dir'] = $settings['www_base_htdocs'] . "/sites/default/files";
+    densite_exec("sudo rm -rf " .   $settings['files_dir']);
+    densite_exec("mkdir " .   $settings['files_dir']);
+    densite_exec ("sudo chmod 777 " . $settings['files_dir']);
   
     $settings_str = densite_get_file($settings['settings_file_default']);
     $search = "\$db_url = 'mysql://username:password@localhost/databasename'";
     $replace = "\$db_url = " . "'$db_spec[driver]://$db_spec[username]:$db_spec[password]@$db_spec[host]/$db_spec[database]'";
     $settings_str = str_replace($search, $replace, $settings_str);
+    densite_exec ("sudo chmod 777 " . $settings['files_dir']);
   }
   
   // write the new settings into settings.php
@@ -213,11 +237,212 @@ function densitein_create_site($site, $db_spec, $settings){
   // set correct permissions for files dir and settings.php
   
   densite_write_settings($settings['settings_file'], $settings_str);
+  return 0;
+}
+
+function densite_chmod_settings ($settings) {
   densite_exec ("sudo chmod " . DENSITE_FOLDER_PERMS . " " . $settings['files_dir']);
   densite_exec ("sudo chown " . DENSITE_DEFAULT_USER . ":" . DENSITE_DEFAULT_GROUP . " " . $settings['files_dir']);
   densite_exec ("sudo chmod " . DENSITE_SETTINGS_PERMS . " " . $settings['settings_file']);
   densite_exec ("sudo chown " . DENSITE_DEFAULT_USER . ":" . DENSITE_DEFAULT_GROUP . " " . $settings['settings_file']);
-  return 0;
-} 
 
-// }}}
+}
+
+function densite_curl_6 ($site, $db_spec, $settings) {
+    if (DENSITE_DEBUG){
+        print_r($site);
+        print_r($db_spec);
+        print_r($settings);
+    }
+
+      // end of settings
+     // create a url for curling db settings
+    $url_str = "db_path=$db_spec[database]&";
+    $url_str.= "db_user=$db_spec[username]&";
+    $url_str.= "db_pass=$db_spec[password]&";
+    $url_str.= "db_host=$db_spec[host]&";
+    $url_str.= "db_prefix=&";
+    $url_str.= "db_port=&";
+    $url_str.= "op=Save and continue" . "&";
+    $url_str.= "form_id=install_settings_form";
+    $url_str = urlencode($url_str);
+
+    $base_url = "http://$site/install.php";
+    $url_1 = "$base_url?profile=" . DENSITE_PROFILE;
+
+    $curl = new mycurl($url_1, true);
+    $curl->createCurl();
+    $end_str = $curl;
+
+    $url_2 = $url_1 . "&locale=" . DENSITE_LOCALE;
+    $curl = new mycurl($url_2, true);
+    $curl->setPost($url_str);
+    $curl->createCurl();
+    $end_str.=$curl;
+
+    $url_3 = $url_2 . "&op=do_nojs&id=1";
+
+    $curl = new mycurl($url_3, true);
+    $curl->setPost($url_str);
+    $curl->createCurl();
+    $end_str.=$curl;
+
+    $url_4 = $url_2 . "&op=finished&id=1";
+
+    $curl = new mycurl($url_4, true);
+    $curl->setPost($url_str);
+    $curl->createCurl();
+    $end_str.=$curl;
+
+    // set settings for loading database with site base settings
+    $url_str = "site_name=" . DENSITE_SITE_NAME . "&";
+    $url_str.= "site_mail=" . DENSITE_SITE_MAIL . "&";
+    $url_str.= "account[name]=" . DENSITE_ACCOUNT_NAME . "&";
+    $url_str.= "account[mail]=". DENSITE_ACCOUNT_MAIL . "&";
+    $url_str.= "account[pass][pass1]=" . DENSITE_ACCOUNT_PASS . "&";
+    $url_str.= "account[pass][pass2]=" . DENSITE_ACCOUNT_PASS . "&";
+    $url_str.= "date_default_timezone=" . DENSITE_DATE_DEFAULT_TIMEZONE . "&";
+    $url_str.= "clean_url=" . DENSITE_CLEAN_URL . "&";
+    $url_str.= "form_id=install_configure_form&";
+    $url_str.= "update_status_module[1]=". DENSITE_UPDATE_STATUS_MODULE;
+
+    // use url_2 again
+    //$url = "$base_url?profile=default&locale=en";
+    $curl = new mycurl($url_2, true);
+    $curl->setPost($url_str);
+    $curl->createCurl();
+    $end_str.=$curl;
+    file_put_contents('./curl.html', $end_str);
+    return 0;
+}
+
+
+class mycurl {
+     protected $_useragent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1';
+     protected $_url;
+     protected $_followlocation;
+     protected $_timeout;
+     protected $_maxRedirects;
+     protected $_cookieFileLocation = './cookie.txt';
+     protected $_post;
+     protected $_postFields;
+     protected $_referer ="http://www.google.com";
+
+     protected $_session;
+     protected $_webpage;
+     protected $_includeHeader;
+     protected $_noBody;
+     protected $_status;
+     protected $_binaryTransfer;
+     public    $authentication = 0;
+     public    $auth_name      = '';
+     public    $auth_pass      = '';
+
+     public function useAuth($use){
+       $this->authentication = 0;
+       if($use == true) $this->authentication = 1;
+     }
+
+     public function setName($name){
+       $this->auth_name = $name;
+     }
+     public function setPass($pass){
+       $this->auth_pass = $pass;
+     }
+
+     public function __construct($url,$followlocation = true,$timeOut = 30,$maxRedirecs = 4,$binaryTransfer = false,$includeHeader = true,$noBody = false)
+     {
+         $this->_url = $url;
+         $this->_followlocation = $followlocation;
+         $this->_timeout = $timeOut;
+         $this->_maxRedirects = $maxRedirecs;
+         $this->_noBody = $noBody;
+         $this->_includeHeader = $includeHeader;
+         $this->_binaryTransfer = $binaryTransfer;
+
+         $this->_cookieFileLocation = dirname(__FILE__).'/cookie.txt';
+
+     }
+
+     public function setReferer($referer){
+       $this->_referer = $referer;
+     }
+
+     public function setCookiFileLocation($path)
+     {
+         $this->_cookieFileLocation = $path;
+     }
+
+     public function setPost ($postFields)
+     {
+        $this->_post = true;
+        $this->_postFields = $postFields;
+     }
+
+     public function setUserAgent($userAgent)
+     {
+         $this->_useragent = $userAgent;
+     }
+
+     public function createCurl($url = 'nul')
+     {
+        if($url != 'nul'){
+          $this->_url = $url;
+        }
+
+         $s = curl_init();
+
+         curl_setopt($s,CURLOPT_URL,$this->_url);
+         curl_setopt($s,CURLOPT_HTTPHEADER,array('Expect:'));
+         curl_setopt($s,CURLOPT_TIMEOUT,$this->_timeout);
+         curl_setopt($s,CURLOPT_MAXREDIRS,$this->_maxRedirects);
+         curl_setopt($s,CURLOPT_RETURNTRANSFER,true);
+         curl_setopt($s,CURLOPT_FOLLOWLOCATION,$this->_followlocation);
+         curl_setopt($s,CURLOPT_COOKIEJAR,$this->_cookieFileLocation);
+         curl_setopt($s,CURLOPT_COOKIEFILE,$this->_cookieFileLocation);
+
+         if($this->authentication == 1){
+           curl_setopt($s, CURLOPT_USERPWD, $this->auth_name.':'.$this->auth_pass);
+         }
+         if($this->_post)
+         {
+             curl_setopt($s,CURLOPT_POST,true);
+             curl_setopt($s,CURLOPT_POSTFIELDS,$this->_postFields);
+
+         }
+
+         if($this->_includeHeader)
+         {
+               curl_setopt($s,CURLOPT_HEADER,true);
+         }
+
+         if($this->_noBody)
+         {
+             curl_setopt($s,CURLOPT_NOBODY,true);
+         }
+         /*
+         if($this->_binary)
+         {
+             curl_setopt($s,CURLOPT_BINARYTRANSFER,true);
+         }
+         */
+         curl_setopt($s,CURLOPT_USERAGENT,$this->_useragent);
+         curl_setopt($s,CURLOPT_REFERER,$this->_referer);
+
+         $this->_webpage = curl_exec($s);
+         $this->_status = curl_getinfo($s,CURLINFO_HTTP_CODE);
+         curl_close($s);
+
+     }
+
+   public function getHttpStatus()
+   {
+       return $this->_status;
+   }
+
+   public function __tostring(){
+      return $this->_webpage;
+   }
+}
+
+

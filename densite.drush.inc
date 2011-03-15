@@ -374,7 +374,7 @@ function densite_print_status($site, $db_res){
   } else if ($db_res == 2) {
     $status = dt("You may go to http://"); 
     $status.= $site . "\n";
-    $status.= dt("Login with username 'admin' and password 'admin' if you have used default sql dumps"). "\n";
+    $status.= dt("Login with username" . DENSITE_ACCOUNT_NAME . " and password " . DENSITE_ACCOUNT_PASS . " if you used curl install"). "\n";
     densite_print($status);
     return 0;
   } else {
@@ -1030,12 +1030,14 @@ function densite_load_db_file($site, $db_spec){
   $dump_dir = dirname(__FILE__) . "/sql";
   $res = densite_list_sql_dumps(true);
   if (!$res){
-    densite_print(dt("No dumps were found in ") . $dump_dir .  "\n");
+    densite_print(dt("Continue with clean install. No dumps were found in.  ") . $dump_dir .  "\n");
+    return 1;
+    /*
     densite_print(dt("You can choose to download some default dumps found at:" . "\n"));
     $dl_dumps = strtoupper(densite_readline("Download and install default dumps (236 KB) for all versions of drupal [Y/n]? "));
     if ($dl_dumps == 'Y' || empty($dl_dumps)){      
       $dl = densite_download_dumps();
-    }
+    }*/
   }
   
   $res = densite_list_sql_dumps(true);
@@ -1796,9 +1798,12 @@ function densite_test($site){
 function densite_update_etc_hosts ($hostname){
     // create new hosts file and reload server
     $hosts_file_str = file_get_contents("/etc/hosts");
-    $new_hosts_file_str = "127.0.0.1\t$hostname\n" . $hosts_file_str;
-    file_put_contents("/tmp/hosts", $new_hosts_file_str);
-    densite_exec("sudo cp -f /tmp/hosts /etc/hosts");
-    densite_exec("sudo /etc/init.d/apache2 reload");
-    densite_exec("rm /tmp/hosts");
+    $new_host = "127.0.0.1\t$hostname\n";
+    if (!strstr($hosts_file_str, $new_host)) {
+      $new_hosts_file_str =  $new_host . $hosts_file_str;
+      file_put_contents("/tmp/hosts", $new_hosts_file_str);
+      densite_exec("sudo cp -f /tmp/hosts /etc/hosts");
+      densite_exec("sudo /etc/init.d/apache2 reload");
+      densite_exec("rm /tmp/hosts");
+    }
 }
