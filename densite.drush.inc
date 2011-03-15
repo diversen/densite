@@ -367,19 +367,11 @@ function densite_densite($site) {
  * function for printing status of install
  * @param   int  $db_res
  */ 
-function densite_print_status($site, $db_res){
-  if ($db_res == 1){
-    densite_print(dt("Manual install. Continue on http://") . $site . "/install.php\n");
+function densite_print_status($site){
+    $status = dt("Manual install. Continue on http://") . $site . "/install.php\n";
+    $status.= dt("Or use:\n\ncd $site/htdocs && drush site-install\n\n to do it from command line\n");
+    densite_print(dt($status));
     return 0;
-  } else if ($db_res == 2) {
-    $status = dt("You may go to http://"); 
-    $status.= $site . "\n";
-    $status.= dt("Login with username" . DENSITE_ACCOUNT_NAME . " and password " . DENSITE_ACCOUNT_PASS . " if you used curl install"). "\n";
-    densite_print($status);
-    return 0;
-  } else {
-    // should not happen
-  }
 }
 
 // }}}
