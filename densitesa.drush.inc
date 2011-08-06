@@ -456,7 +456,7 @@ function densitesa_download_drupal_file(&$settings){
   $source_exists = file_exists( "drupal-" . $version );
   $reuse_source = 'Y';
   if ( $source_exists ){
-    $readline_str = dt("drupal-" . $version . " detected. ¿Would you like to use it as files source? [Y/n]: ");
+    $readline_str = dt("drupal-" . $version . " detected. Would you like to use it as files source? [Y/n]: ");
     $reuse_source = densite_readline($readline_str);
   }
   else{
@@ -469,7 +469,7 @@ function densitesa_download_drupal_file(&$settings){
   }
 
   $settings['delete_download_file'] = 'N';
-  $readline_str = dt("¿Would you like to delete downloaded source files after install? [y/N]: ");
+  $readline_str = dt("Would you like to delete downloaded source files after install? [y/N]: ");
   $settings['delete_download_file'] = densite_readline($readline_str);
 
 
