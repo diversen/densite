@@ -170,7 +170,9 @@ function densitein_create_site($site, $db_spec, $settings){
   
   // when we have used the downloaded file
   // delete it
-  densite_exec("rm -Rf " . $settings['drupal_download_file']);
+  if ( $settings['delete_download_file'] == 'Y' or $settings['delete_download_file'] == 'y' ) {
+    densite_exec("rm -Rf " . $settings['drupal_download_file']);
+  }
   densite_exec("cp " .      $settings['settings_file_default'] . " " .             $settings['settings_file']);
   
   // for drupal 5 files folder are placed in root of install

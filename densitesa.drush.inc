@@ -453,27 +453,42 @@ function densitesa_download_drupal_file(&$settings){
   $settings['drupal_download_file'] = "drupal-" . $version;
   $settings['drupal_source_path'] = $settings['drupal_root'] . "/" . $settings['drupal_download_file'];
   
-  // start out by checking if the file exists on the download server
-  // notice that we force the execution of the script 
-  // because we are only checking if file exists
-  $command = "wget --spider " . DENSITE_DOWNLOAD_URL;
-  $exists = 0;
-  system ($command . $settings['drupal_download_file'] . ".tar.gz", $exists);
+  $source_exists = file_exists( "drupal-" . $version );
+  $reuse_source = 'Y';
+  if ( $source_exists ){
+    $readline_str = dt("drupal-" . $version . " detected. ¿Would you like to use it as files source? [Y/n]: ");
+    $reuse_source = densite_readline($readline_str);
+  }
+  else{
+    // start out by checking if the file exists on the download server
+    // notice that we force the execution of the script 
+    // because we are only checking if file exists
+    $command = "wget --spider " . DENSITE_DOWNLOAD_URL;
+    $exists = 1;
+    system ($command . $settings['drupal_download_file'] . ".tar.gz", $exists);
+  }
 
-  // ok
-  if (!$exists){
+  $settings['delete_download_file'] = 'N';
+  $readline_str = dt("¿Would you like to delete downloaded source files after install? [y/N]: ");
+  $settings['delete_download_file'] = densite_readline($readline_str);
+
+
+  if ( $source_exists and $reuse_source != 'n' and  $reuse_source != 'N' ){
     $settings['drupal_major_version'] = $m = substr($version, 0, 1);
     $settings['settings_file_default'] = $settings['settings_file_default'] . "-" . $m .".x";
+    return 1;
+  }
 
-    // resume download use downloaded file
-    $command = "wget -c " . DENSITE_DOWNLOAD_URL;
+  // ok
+  if ($exists == 0){
+    $settings['drupal_major_version'] = $m = substr($version, 0, 1);
+    $settings['settings_file_default'] = $settings['settings_file_default'] . "-" . $m .".x";
+    $command = "wget " . DENSITE_DOWNLOAD_URL;
 
     // we use system here to see the process of wget
     system ($command . $settings['drupal_download_file'] . ".tar.gz" , $res);
     densite_exec ("tar xfz " . $settings['drupal_download_file'] . ".tar.gz");
-
-    // don't remove.
-    //densite_exec ("rm " . $settings['drupal_download_file'] . ".tar.gz");
+    densite_exec ("rm " . $settings['drupal_download_file'] . ".tar.gz");
     return 1;
   } else {
     densite_print(dt("File does not exist on remote server") . "\n");
